@@ -1,0 +1,6 @@
+[Defines]
+  DEC_SPECIFICATION              = 0x00010005
+  PACKAGE_NAME                   = MemoryUtilityPkg
+  PACKAGE_GUID                   = ead13a90-5b27-4a34-a675-0f31bb72b79e
+  PACKAGE_VERSION                = 0.1
+

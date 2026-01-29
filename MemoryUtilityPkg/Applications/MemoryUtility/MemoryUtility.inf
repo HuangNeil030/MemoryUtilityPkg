@@ -1,0 +1,24 @@
+[Defines]
+  INF_VERSION                    = 0x00010005
+  BASE_NAME                      = MemoryUtility
+  FILE_GUID                      = 7d0acb41-7e99-4fff-b684-9a9655958166
+  MODULE_TYPE                    = UEFI_APPLICATION
+  VERSION_STRING                 = 1.0
+  ENTRY_POINT                    = UefiMain
+
+[Sources]
+  MemoryUtility.c
+ [BuildOptions]
+  MSFT:*_*_*_CC_FLAGS = /wd4819
+
+[Packages]
+  MdePkg/MdePkg.dec
+  MemoryUtilityPkg/MemoryUtilityPkg.dec
+
+[LibraryClasses]
+  UefiLib
+  UefiApplicationEntryPoint
+  UefiBootServicesTableLib
+  MemoryAllocationLib
+  BaseMemoryLib
+  BaseLib

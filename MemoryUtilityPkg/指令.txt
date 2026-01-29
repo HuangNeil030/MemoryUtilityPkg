@@ -1,0 +1,4 @@
+edksetup.bat Rebuild 
+set PYTHONUTF8=1 
+set PYTHONIOENCODING=utf-8    
+build -p MemoryUtilityPkg/MemoryUtilityPkg.dsc -a X64 -t VS2019 -b DEBUG -v 

@@ -1,0 +1,772 @@
+使用相關函數
+
+EFI_SIMPLE_TEXT_INPUT_PROTOCOL.ReadKeyStroke()
+
+Summary
+Reads the next keystroke from the input device
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_INPUT_READ_KEY) (
+ IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL *This,
+OUT EFI_INPUT_KEY                  *Key
+ );
+
+Parameters
+
+This: A pointer to the EFI_SIMPLE_TEXT_INPUT_PROTOCOL instance. 
+Type EFI_SIMPLE_TEXT_INPUT_PROTOCOL is defined in Section 12.3
+
+Key: A pointer to a buffer that is filled in with the keystroke information 
+for the key that was pressed. Type EFI_INPUT_KEY is defined in 
+“Related Definitions” below
+
+Description
+The ReadKeyStroke() function reads the next keystroke from the input device. If there is no pending 
+keystroke the function returns EFI_NOT_READY. If there is a pending keystroke, then ScanCode is the EFI scan code defined in Table 12-2. The UnicodeChar is the actual printable character or is zero if the key does not represent a printable character (control key, function key, etc.). 
+
+Status Codes Returned
+
+EFI_SUCCESS       The keystroke information was returned.
+EFI_NOT_READY     There was no keystroke data available.
+EFI_DEVICE_ERROR  The keystroke information was not returned due to hardware errors.
+EFI_UNSUPPORTED   The device does not support the ability to read keystroke data.
+
+EFI_BOOT_SERVICES.WaitForEvent()
+Summary
+
+Stops execution until an event is signaled.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_WAIT_FOR_EVENT) (
+   IN UINTN             NumberOfEvents,
+   IN EFI_EVENT         *Event,
+   OUT UINTN            *Index
+  );
+
+Parameters
+
+NumberOfEvents: The number of events in the Event array.
+
+Event: An array of EFI_EVENT. Type EFI_EVENT is defined in UEFI Forum, Inc. March 2021 148 EFI_BOOT_SERVICES.CreateEvent() function description.
+
+Index:　Pointer to the index of the event which satisfied the wait condition.
+
+Description
+
+This function must be called at priority level TPL_APPLICATION. If an attempt is made to call it at any other priority level, EFI_UNSUPPORTED is returned.
+
+The list of events in the Event array are evaluated in order from first to last, and this evaluation is repeated until an event is signaled or an error is detected. The following checks are performed on each event in the Event array.
+
+If an event is of type EVT_NOTIFY_SIGNAL, then EFI_INVALID_PARAMETER is returned and Index indicates the event that caused the failure.
+
+If an event is in the signaled state, the signaled state is cleared and EFI_SUCCESS is returned, and Index indicates the event that was signaled.
+
+If an event is not in the signaled state but does have a notification function, the notification function is queued at the event’s notification task priority level. If the execution of the event’s notification function causes the event to be signaled, then the signaled state is cleared, EFI_SUCCESS is returned, and Index indicates the event that was signaled.
+
+To wait for a specified time, a timer event must be included in the Event array.
+
+To check if an event is signaled without waiting, an already signaled event can be used as the last event in the list being checked, or the CheckEvent() interface may be used.
+
+Status Codes Returned
+
+EFI_SUCCESS             The event indicated by Index was signaled.
+EFI_INVALID_PARAMETER　 NumberOfEvents is 0.
+EFI_INVALID_PARAMETER   The event indicated by Index is of type EVT_NOTIFY_SIGNAL.
+EFI_UNSUPPORTED         The current TPL is not TPL_APPLICATION.
+
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.SetMode()
+Summary
+
+Sets the output device(s) to a specified mode.
+
+Prototype
+
+typedef
+EFI_STATUS
+(* EFIAPI EFI_TEXT_SET_MODE) (
+ IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL          *This,
+ IN UINTN                                    ModeNumber
+ );
+Parameters
+
+This: A pointer to the EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL instance. Type EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL is defined in the “Related Definitions” of Simple Text Output Protocol.
+
+ModeNumber: The text mode to set.
+
+Description
+
+The SetMode() function sets the output device(s) to the requested mode. On success the device is in the geometry for the requested mode, and the device has been cleared to the current background color with the cursor at (0,0).
+
+Status Codes Returned
+
+EFI_SUCCESS      The requested text mode was set.
+EFI_DEVICE_ERROR The device had an error and could not complete the request.
+EFI_UNSUPPORTED  The mode number was not valid.
+
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.ClearScreen()
+Summary
+
+Clears the output device(s) display to the currently selected background color.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI \*EFI_TEXT_CLEAR_SCREEN) (
+ IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL             *This
+ );
+Parameters
+
+This:　A pointer to the EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL instance. Type EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL is defined in the “Related Definitions” of Simple Text Output Protocol.
+
+Description
+
+The ClearScreen() function clears the output device(s) display to the currently selected background color. The cursor position is set to (0, 0).
+
+Status Codes Returned
+
+EFI_SUCCESS　　   The operation completed successfully.
+EFI_DEVICE_ERROR  The device had an error and could not complete the request.
+EFI_UNSUPPORTED   The output device is not in a valid text mode.
+
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.SetCursorPosition()
+Summary
+
+Sets the current coordinates of the cursor position.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TEXT_SET_CURSOR_POSITION) (
+ IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL             *This,
+ IN UINTN                                       Column,
+ IN UINTN                                       Row
+ );
+Parameters
+
+This: A pointer to the EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL instance. Type EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL is defined in the “Related Definitions” of Simple Text Output Protocol .
+
+Column, Row: The position to set the cursor to. Must greater than or equal to zero and less than the number of columns and rows returned by EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.QueryMode() .
+
+Description
+
+The SetCursorPosition() function sets the current coordinates of the cursor position. The upper left corner of the screen is defined as coordinate (0, 0).
+
+Status Codes Returned
+
+EFI_SUCCESS       The operation completed successfully.
+EFI_DEVICE_ERROR  The device had an error and could not complete the request.
+EFI_UNSUPPORTED   The output device is not in a valid text mode, or the cursor position is invalid for the current mode.
+
+EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL.EnableCursor()
+Summary
+
+Makes the cursor visible or invisible.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_TEXT_ENABLE_CURSOR) (
+ IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL             *This,
+ IN BOOLEAN                                     Visible
+ );
+Parameters
+
+This: A pointer to the EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL instance. Type EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL is defined in the “Related Definitions” of Simple Text Output Protocol .
+
+Visible:If TRUE, the cursor is set to be visible. If FALSE, the cursor is set to be invisible.
+
+Description
+
+The EnableCursor() function makes the cursor visible or invisible.
+
+Status Codes Returned
+
+EFI_SUCCESS       The operation completed successfully.
+EFI_DEVICE_ERROR  The device had an error and could not complete the request or the device does not support changing the cursor mode.
+EFI_UNSUPPORTED   The output device does not support visibility control of the cursor.
+
+EFI_BOOT_SERVICES.FreePages()
+Summary
+
+Frees memory pages.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_FREE_PAGES) (
+IN EFI_PHYSICAL_ADDRESS    Memory,
+IN UINTN                   Pages
+);
+Parameters
+
+Memory: The base physical address of the pages to be freed. Type EFI_PHYSICAL_ADDRESS is defined in the EFI_BOOT_SERVICES.AllocatePages() function description.
+
+Pages:  The number of contiguous 4 KiB pages to free.
+
+Description
+
+The FreePages() function returns memory allocated by AllocatePages() to the firmware.
+
+Status Codes Returned
+
+EFFI_SUCCESS    The requested memory pages were freed
+EFI_NOT_FOUND   The requested memory pages were not allocated with AllocatePages().
+EFI_INVALID_PARAMETER  Memory is not a page-aligned address or Pages is invalid.
+
+EFI_BOOT_SERVICES.AllocatePages()
+Summary
+
+Allocates memory pages from the system.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_ALLOCATE_PAGES) (
+   IN EFI_ALLOCATE_TYPE                   Type,
+   IN EFI_MEMORY_TYPE                     MemoryType,
+   IN UINTN                               Pages,
+   IN OUT EFI_PHYSICAL_ADDRESS            *Memory
+   );
+Parameters
+
+Type: The type of allocation to perform. See “Related Definitions.”
+
+MemoryType: The type of memory to allocate. The type EFI_MEMORY_TYPE is defined in “Related Definitions” below. These memory types are also described in more detail in Memory Type Usage before ExitBootServices(), and Memory Type Usage after ExitBootServices() . Normal allocations (that is, allocations by any UEFI application) are of type EfiLoaderData. MemoryType values in the range 0x70000000..0x7FFFFFFF are reserved for OEM use. MemoryType values in the range 0x80000000..0xFFFFFFFF are reserved for use by UEFI OS loaders that are provided by operating system vendors.
+
+Pages: The number of contiguous 4 KiB pages to allocate.
+
+Memory: Pointer to a physical address. On input, the way in which the address is used depends on the value of Type. See “Description” for more information. On output the address is set to the base of the page range that was allocated. See “Related Definitions.”
+
+NOTE: UEFI Applications, UEFI Drivers, and UEFI OS Loaders must not allocate memory of types EfiReservedMemoryType, EfiMemoryMappedIO, and EfiUnacceptedMemoryType.
+
+Related Definitions
+
+//******************************************************
+//EFI_ALLOCATE_TYPE
+//******************************************************
+// These types are discussed in the "Description" section below.
+typedef enum {
+   AllocateAnyPages,
+   AllocateMaxAddress,
+   AllocateAddress,
+   MaxAllocateType
+} EFI_ALLOCATE_TYPE;
+
+//******************************************************
+//EFI_MEMORY_TYPE
+//******************************************************
+// These type values are discussed in Memory Type Usage before ExitBootServices()  and  Memory Type Usage after ExitBootServices().
+typedef enum {
+   EfiReservedMemoryType,
+   EfiLoaderCode,
+   EfiLoaderData,
+   EfiBootServicesCode,
+   EfiBootServicesData,
+   EfiRuntimeServicesCode,
+   EfiRuntimeServicesData,
+   EfiConventionalMemory,
+   EfiUnusableMemory,
+   EfiACPIReclaimMemory,
+   EfiACPIMemoryNVS,
+   EfiMemoryMappedIO,
+   EfiMemoryMappedIOPortSpace,
+   EfiPalCode,
+   EfiPersistentMemory,
+   EfiUnacceptedMemoryType,
+   EfiMaxMemoryType
+} EFI_MEMORY_TYPE;
+
+//******************************************************
+//EFI_PHYSICAL_ADDRESS
+//******************************************************
+typedef UINT64 EFI_PHYSICAL_ADDRESS;
+Description
+
+The AllocatePages() function allocates the requested number of pages and returns a pointer to the base address of the page range in the location referenced by Memory. The function scans the memory map to locate free pages. When it finds a physically contiguous block of pages that is large enough and also satisfies the allocation requirements of Type, it changes the memory map to indicate that the pages are now of type MemoryType.
+
+In general, UEFI OS loaders and UEFI applications should allocate memory (and pool) of type EfiLoaderData. UEFI boot service drivers must allocate memory (and pool) of type EfiBootServicesData. UREFI runtime drivers should allocate memory (and pool) of type EfiRuntimeServicesData (although such allocation can only be made during boot services time).
+
+Allocation requests of Type AllocateAnyPages allocate any available range of pages that satisfies the request. On input, the address pointed to by Memory is ignored.
+
+Allocation requests of Type AllocateMaxAddress allocate any available range of pages whose uppermost address is less than or equal to the address pointed to by Memory on input.
+
+Allocation requests of Type AllocateAddress allocate pages at the address pointed to by Memory on input.
+
+NOTE: UEFI drivers and UEFI applications that are not targeted for a specific implementation must perform memory allocations for the following runtime types using AllocateAnyPages address mode:
+
+EfiACPIReclaimMemory,
+EfiACPIMemoryNVS,
+EfiRuntimeServicesCode,
+EfiRuntimeServicesData,
+EfiReservedMemoryType.
+Status Codes Returned
+
+EFI_SUCCESS            The requested pages were allocated.
+EFI_OUT_OF_RESOURCEST  The pages could not be allocated.
+EFI_INVALID_PARAMETER  Type is not AllocateAnyPages or AllocateMaxAddress or AllocateAddress
+EFI_INVALID_PARAMETER  MemoryType is in the range EfiMaxMemoryType..0x6FFFFFFF.
+EFI_INVALID_PARAMETER  MemoryType is EfiPersistentMemoryType or EfiUnacceptedMemory.
+EFI_INVALID_PARAMETER  Memory is NULL.
+EFI_NOT_FOUND          The requested pages could not be found.
+
+EFI_BOOT_SERVICES.GetMemoryMap()
+Summary
+
+Returns the current memory map.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI \*EFI_GET_MEMORY_MAP) (
+   IN OUT UINTN                  *MemoryMapSize,
+   OUT EFI_MEMORY_DESCRIPTOR     *MemoryMap,
+   OUT UINTN                     *MapKey,
+   OUT UINTN                     *DescriptorSize,
+   OUT UINT32                    *DescriptorVersion
+  );
+Parameters
+
+MemoryMapSize
+A pointer to the size, in bytes, of the MemoryMap buffer. On input, this is the size of the buffer allocated by the caller. On output, it is the size of the buffer returned by the firmware if the buffer was large enough, or the size of the buffer needed to contain the map if the buffer was too small.
+
+MemoryMap
+A pointer to the buffer in which firmware places the current memory map. The map is an array of EFI_MEMORY_DESCRIPTORs. See “Related Definitions.”
+
+MapKey
+A pointer to the location in which firmware returns the key for the current memory map.
+
+DescriptorSize
+A pointer to the location in which firmware returns the size, in bytes, of an individual EFI_MEMORY_DESCRIPTOR.
+
+DescriptorVersion
+A pointer to the location in which firmware returns the version number associated with the EFI_MEMORY_DESCRIPTOR. See “Related Definitions.”
+
+Related Definitions
+
+..code-block:
+
+//******************************************************
+//EFI_MEMORY_DESCRIPTOR
+//******************************************************
+typedef struct {
+   UINT32                     Type;
+   EFI_PHYSICAL_ADDRESS       PhysicalStart;
+   EFI_VIRTUAL_ADDRESS        VirtualStart;
+   UINT64                     NumberOfPages;
+   UINT64                     Attribute;
+  } EFI_MEMORY_DESCRIPTOR;
+Type
+Type of the memory region. Type EFI_MEMORY_TYPE is defined in the EFI_BOOT_SERVICES.AllocatePages() function description.
+
+PhysicalStart
+Physical address of the first byte in the memory region. PhysicalStart must be aligned on a 4 KiB boundary, and must not be above 0xfffffffffffff000. Type EFI_PHYSICAL_ADDRESS is defined in the AllocatePages() function description.
+
+VirtualStart
+Virtual address of the first byte in the memory region. VirtualStart must be aligned on a 4 KiB boundary, and must not be above 0xfffffffffffff000. Type EFI_VIRTUAL_ADDRESS is defined in “Related Definitions.”
+
+NumberOfPages
+Number of 4 KiB pages in the memory region. NumberOfPages must not be 0, and must not be any value that would represent a memory page with a start address, either physical or virtual, above 0xfffffffffffff000
+
+Attribute
+Attributes of the memory region that describe the bit mask of capabilities for that memory region, and not necessarily the current settings for that memory region. See the following “Memory Attribute Definitions.”
+
+//******************************************************
+// Memory Attribute Definitions
+//******************************************************
+// These types can be "ORed" together as needed.
+#define EFI_MEMORY_UC 0x0000000000000001
+#define EFI_MEMORY_WC 0x0000000000000002
+#define EFI_MEMORY_WT 0x0000000000000004
+#define EFI_MEMORY_WB 0x0000000000000008
+#define EFI_MEMORY_UCE 0x0000000000000010
+#define EFI_MEMORY_WP 0x0000000000001000
+#define EFI_MEMORY_RP 0x0000000000002000
+#define EFI_MEMORY_XP 0x0000000000004000
+#define EFI_MEMORY_NV 0x0000000000008000
+#define EFI_MEMORY_MORE_RELIABLE 0x0000000000010000
+#define EFI_MEMORY_RO 0x0000000000020000
+#define EFI_MEMORY_SP 0x0000000000040000
+#define EFI_MEMORY_CPU_CRYPTO 0x0000000000080000
+#define EFI_MEMORY_RUNTIME 0x8000000000000000
+EFI_MEMORY_UC
+Memory cacheability attribute: The memory region supports being configured as not cacheable.
+
+EFI_MEMORY_WC
+Memory cacheability attribute: The memory region supports being configured as write combining.
+
+EFI_MEMORY_WT
+Memory cacheability attribute: The memory region supports being configured as cacheable with a “write through” policy. Writes that hit in the cache will also be written to main memory.
+
+EFI_MEMORY_WB
+Memory cacheability attribute: The memory region supports being configured as cacheable with a “write back” policy. Reads and writes that hit in the cache do not propagate to main memory. Dirty data is written back to main memory when a new cache line is allocated.
+
+EFI_MEMORY_UCE
+Memory cacheability attribute: The memory region supports being configured as not cacheable, exported, and supports the “fetch and add” semaphore mechanism.
+
+EFI_MEMORY_WP
+Physical memory protection attribute: The memory region supports being configured as write-protected by system hardware. This is typically used as a cacheability attribute today. The memory region supports being configured as cacheable with a “write protected” policy. Reads come from cache lines when possible, and read misses cause cache fills. Writes are propagated to the system bus and cause corresponding cache lines on all processors on the bus to be invalidated.
+
+EFI_MEMORY_SP
+Specific-purpose memory (SPM). The memory is earmarked for specific purposes such as for specific device drivers or applications. The SPM attribute serves as a hint to the OS to avoid allocating this memory for core OS data or code that can not be relocated. Prolonged use of this memory for purposes other than the intended purpose may result in suboptimal platform performance.
+
+EFI_MEMORY_CPU_CRYPTO
+If this flag is set, the memory region is capable of being protected with the CPU’s memory cryptographic capabilities. If this flag is clear, the memory region is not capable of being protected with the CPU’s memory cryptographic capabilities or the CPU does not support CPU memory cryptographic capabilities.
+
+Note: UEFI spec 2.5 and following: use EFI_MEMORY_RO as rite-protected physical memory protection attribute. Also, EFI_MEMORY_WP means cacheability attribute.
+
+EFI_MEMORY_RP
+Physical memory protection attribute: The memory region supports being configured as read-protected by system hardware.
+
+EFI_MEMORY_XP
+Physical memory protection attribute: The memory region supports being configured so it is protected by system hardware from executing code.
+
+EFI_MEMORY_NV
+Runtime memory attribute: The memory region refers to persistent memory
+
+EFI_MEMORY_MORE_RELIABLE
+The memory region provides higher reliability relative to other memory in the system. If all memory has the same reliability, then this bit is not used.
+
+EFI_MEMORY_RO
+Physical memory protection attribute: The memory region supports making this memory range read-only by system hardware.
+
+EFI_MEMORY_RUNTIME
+Runtime memory attribute: The memory region needs to be given a virtual mapping by the operating system when SetVirtualAddressMap() is called (described in Virtual Memory Services .
+
+//******************************************************
+//EFI_VIRTUAL_ADDRESS
+//******************************************************
+typedef UINT64 EFI_VIRTUAL_ADDRESS;
+
+//******************************************************
+// Memory Descriptor Version Number
+//******************************************************
+#define EFI_MEMORY_DESCRIPTOR_VERSION 1
+Description
+
+The GetMemoryMap() function returns a copy of the current memory map. The map is an array of memory descriptors, each of which describes a contiguous block of memory. The map describes all of memory, no matter how it is being used. That is, it includes blocks allocated by EFI_BOOT_SERVICES.AllocatePages() and EFI_BOOT_SERVICES.AllocatePool(), as well as blocks that the firmware is using for its own purposes. The memory map is only used to describe memory that is present in the system. The firmware does not return a range description for address space regions that are not backed by physical hardware. Regions that are backed by physical hardware, but are not supposed to be accessed by the OS, must be returned as EfiReservedMemoryType. The OS may use addresses of memory ranges that are not described in the memory map at its own discretion.
+
+Until EFI_BOOT_SERVICES.ExitBootServices() is called, the memory map is owned by the firmware and the currently executing UEFI Image should only use memory pages it has explicitly allocated.
+
+If the MemoryMap buffer is too small, the EFI_BUFFER_TOO_SMALL error code is returned and the MemoryMapSize value contains the size of the buffer needed to contain the current memory map. The actual size of the buffer allocated for the consequent call to GetMemoryMap() should be bigger then the value returned in MemoryMapSize, since allocation of the new buffer may potentially increase memory map size.
+
+On success a MapKey is returned that identifies the current memory map. The firmware’s key is changed every time something in the memory map changes. In order to successfully invoke EFI_BOOT_SERVICES.ExitBootServices() the caller must provide the current memory map key.
+
+The GetMemoryMap() function also returns the size and revision number of the EFI_MEMORY_DESCRIPTOR. The DescriptorSize represents the size in bytes of an EFI_MEMORY_DESCRIPTOR array element returned in MemoryMap. The size is returned to allow for future expansion of the EFI_MEMORY_DESCRIPTOR in response to hardware innovation. The structure of the EFI_MEMORY_DESCRIPTOR may be extended in the future but it will remain backwards compatible with the current definition. Thus OS software must use the DescriptorSize to find the start of each EFI_MEMORY_DESCRIPTOR in the MemoryMap array.
+
+Status Codes Returned
+
+EFI_SUCCESS            The memory map was returned in the MemoryMap buffer.
+EFI_BUFFER_TOO_SMALL   The MemoryMap buffer was too small. Thecurrent buffer size needed to hold the memory map is returned in MemoryMapSize.
+EFI_INVALID_PARAMETER  MemoryMapSize is NULL.
+EFI_INVALID_PARAMETER  The MemoryMap buffer is not too small and MemoryMap is NULL.
+
+EFI_BOOT_SERVICES.AllocatePool()
+Summary
+
+Allocates pool memory.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI  *EFI_ALLOCATE_POOL) (
+   IN EFI_MEMORY_TYPE            PoolType,
+   IN UINTN                      Size,
+   OUT VOID                      **Buffer
+   );
+Parameters
+
+PoolType
+The type of pool to allocate. Type EFI_MEMORY_TYPE is defined in the EFI_BOOT_SERVICES.AllocatePages() function description. PoolType values in the range 0x70000000..0x7FFFFFFF are reserved for OEM use. PoolType values in the range 0x80000000..0xFFFFFFFF are reserved for use by UEFI OS loaders that are provided by operating system vendors.
+
+Size
+The number of bytes to allocate from the pool.
+
+Buffer
+A pointer to a pointer to the allocated buffer if the call succeeds; undefined otherwise.
+
+Note: UEFI applications and UEFI drivers must not allocate memory of type EfiReservedMemoryType.
+
+Description
+
+The AllocatePool() function allocates a memory region of Size bytes from memory of type PoolType and returns the address of the allocated memory in the location referenced by Buffer. This function allocates pages from EfiConventionalMemory as needed to grow the requested pool type. All allocations are eight-byte aligned.
+
+The allocated pool memory is returned to the available pool with the EFI_BOOT_SERVICES.FreePool() function.
+
+Status Codes Returned
+
+EFI_SUCCESS           The requested number of bytes was allocated.
+EFI_OUT_OF_RESOURCES  The pool requested could not be allocated.
+EFI_INVALID_PARAMETER  PoolType is in the range EfiMaxMemoryType..0x6FFFFFFF.
+EFI_INVALID_PARAMETER  PoolType is EfiPersistentMemory.
+EFI_INVALID_PARAMETER  Buffer is NULL.
+
+EFI_BOOT_SERVICES.FreePool()
+Summary
+
+Returns pool memory to the system.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_FREE_POOL) (
+   IN VOID           *Buffer
+   );
+Parameters
+
+Buffer
+Pointer to the buffer to free.
+
+Description
+
+The FreePool() function returns the memory specified by Buffer to the system. On return, the memory’s type is EfiConventionalMemory. The Buffer that is freed must have been allocated by AllocatePool().
+
+Status Codes Returned
+
+EFI_SUCCESS            The memory was returned to the system.
+EFI_INVALID_PARAMETER  Buffer was invalid.
+
+EFI_BOOT_SERVICES.GetMemoryMap()
+
+Summary
+Returns the current memory map.
+
+Prototype
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_GET_MEMORY_MAP) (
+  IN OUT UINTN                 *MemoryMapSize,
+  OUT EFI_MEMORY_DESCRIPTOR    *MemoryMap,
+  OUT UINTN                    *MapKey,
+  OUT UINTN                    *DescriptorSize,
+  OUT UINT32                   *DescriptorVersion 
+  );
+
+Parameters
+
+MemoryMapSize: A pointer to the size, in bytes, of the MemoryMap buffer. On input, 
+this is the size of the buffer allocated by the caller. On output, it is 
+the size of the buffer returned by the firmware if the buffer was 
+large enough, or the size of the buffer needed to contain the map if 
+the buffer was too small.
+
+MemoryMap: A pointer to the buffer in which firmware places the current memory 
+map. The map is an array of EFI_MEMORY_DESCRIPTORs. See “Related Definitions.”
+
+MapKey: A pointer to the location in which firmware returns the key for the 
+current memory map.
+
+DescriptorSize: A pointer to the location in which firmware returns the size, in bytes, of an individual EFI_MEMORY_DESCRIPTOR. 
+
+DescriptorVersion: A pointer to the location in which firmware returns the version 
+number associated with the EFI_MEMORY_DESCRIPTOR. See “Related Definitions.
+
+Related Definitions
+
+//*******************************************************
+//EFI_MEMORY_DESCRIPTOR
+//*******************************************************
+typedef struct {
+UINT32        
+Type;
+ EFI_PHYSICAL_ADDRESS  PhysicalStart;
+ EFI_VIRTUAL_ADDRESS   VirtualStart;
+ UINT64                NumberOfPages; 
+ UINT64                Attribute; 
+} 
+EFI_MEMORY_DESCRIPTOR;
+
+Type: Type of the memory region.Type EFI_MEMORY_TYPE is defined in the AllocatePages()function description.
+
+PhysicalStart: Physical address of the first byte in the memory region. PhysicalStart must be aligned on a 4 KiB boundary, and must not be above 0xfffffffffffff000. Type EFI_PHYSICAL_ADDRESS is defined in the AllocatePages() function description.
+
+VirtualStart: Virtual address of the first byte in the memory region. VirtualStart must be aligned on a 4 KiB boundary, and must not be above 0xfffffffffffff000.  Type EFI_VIRTUAL_ADDRESS is defined in “Related Definitions.”
+
+NumberOfPages: Number of 4 KiB pages in the memory region.  NumberOfPages must not be 0, and must not be any value that would represent a memory page with a start address, either physical or virtual, above 0xfffffffffffff000 
+
+Attribute: Attributes of the memory region that describe the bit mask of capabilities for that memory region, and not necessarily the current settings for that memory region. See the following “Memory Attribute Definitions.”
+
+//*******************************************************
+// Memory Attribute Definitions
+//*******************************************************
+// These types can be “ORed” together as needed. 
+#define EFI_MEMORY_UC            0x0000000000000001       
+#define EFI_MEMORY_WC            0x0000000000000002        
+#define EFI_MEMORY_WT            0x0000000000000004        
+#define EFI_MEMORY_WB            0x0000000000000008        
+#define EFI_MEMORY_UCE           0x0000000000000010        
+#define EFI_MEMORY_WP            0x0000000000001000        
+#define EFI_MEMORY_RP            0x0000000000002000        
+#define EFI_MEMORY_XP            0x0000000000004000        
+#define EFI_MEMORY_NV            0x0000000000008000        
+#define EFI_MEMORY_MORE_RELIABLE 0x0000000000010000
+#define EFI_MEMORY_RO            0x0000000000020000
+#define EFI_MEMORY_SP            0x0000000000040000
+#define EFI_MEMORY_CPU_CRYPTO    0x0000000000080000
+#define EFI_MEMORY_RUNTIME       0x8000000000000000
+
+EFI_MEMORY_UC: Memory cacheability attribute: The memory region supports being 
+configured as not cacheable. 
+EFI_MEMORY_WC: Memory cacheability attribute: The memory region supports being 
+configured as write combining.
+EFI_MEMORY_WT: Memory cacheability attribute: The memory region supports being 
+configured as cacheable with a “write through” policy. Writes that hit in the cache will also be written to main memory.
+EFI_MEMORY_WB: Memory cacheability attribute: The memory region supports being configured as cacheable with a “write back” policy. Reads and writes 
+that hit in the cache do not propagate to main memory. Dirty data is written back to main memory when a new cache line is allocated.
+EFI_MEMORY_UCE: Memory cacheability attribute: The memory region supports being configured as not cacheable, exported, and supports the “fetch and add” semaphore mechanism. 
+EFI_MEMORY_WP: Physical memory protection attribute: The memory region supports 
+being configured as write-protected by system hardware. This is typically used as a cacheability attribute today. The memory region supports being configured as cacheable with a "write protected" policy. Reads come from cache lines when possible, and read misses cause cache fills. Writes are propagated to the system bus and cause corresponding cache lines on all processors on the bus to be 
+invalidated. 
+EFI_MEMORY_SP: Specific-purpose memory (SPM). The memory is earmarked for 
+specific purposes such as for specific device drivers or applications. 
+The SPM attribute serves as a hint to the OS to avoid allocating this memory for core OS data or code that can not be relocated. Prolonged use of this memory for purposes other than the intended purpose may result in suboptimal platform performance.
+
+EFI_MEMORY_CPU_CRYPTO:　If this flag is set, the memory region is capable of being 
+protected with the CPU’s memory cryptographic capabilities. If this flag is clear, the memory region is not capable of being protected with the CPU’s memory cryptographic capabilities or the CPU does not support CPU memory cryptographic capabilities.
+
+Note: UEFI spec 2.5 and following: use EFI_MEMORY_RO as write-protected physical memory 
+protection attribute. Also, EFI_MEMORY_WP means cacheability attribute.
+
+EFI_MEMORY_RP：　Physical memory protection attribute: The memory region supports 
+being configured as read-protected by system hardware.
+EFI_MEMORY_XP：　Physical memory protection attribute: The memory region supports 
+being configured so it is protected by system hardware from 
+executing code.
+EFI_MEMORY_NV：　Runtime memory attribute: The memory region refers to persistent 
+memory  
+EFI_MEMORY_MORE_RELIABLE：　The memory region provides higher reliability relative to other memory in the system. If all memory has the same reliability, then 
+this bit is not used.
+EFI_MEMORY_RO ： Physical memory protection attribute: The memory region supports 
+making this memory range read-only by system hardware.
+EFI_MEMORY_RUNTIME:　Runtime memory attribute: The memory region needs to be given a virtual mapping by the operating system when SetVirtualAddressMap() is called (described in Section 8.4).
+
+//*******************************************************
+//EFI_VIRTUAL_ADDRESS
+//*******************************************************
+typedef UINT64  EFI_VIRTUAL_ADDRESS;
+//*******************************************************
+// Memory Descriptor Version Number
+//*******************************************************
+#define EFI_MEMORY_DESCRIPTOR_VERSION 1
+
+Description
+The GetMemoryMap() function returns a copy of the current memory map. The map is an array of 
+memory descriptors, each of which describes a contiguous block of memory. The map describes all of 
+memory, no matter how it is being used. That is, it includes blocks allocated by 
+EFI_BOOT_SERVICES.AllocatePages() and EFI_BOOT_SERVICES.AllocatePool(), as well as 
+blocks that the firmware is using for its own purposes. The memory map is only used to describe memory that is present in the system. The firmware does not return a range description for address space regions 
+that are not backed by physical hardware. Regions that are backed by physical hardware, but are not supposed to be accessed by the OS, must be returned as EfiReservedMemoryType. The OS may use addresses of memory ranges that are not described in the memory map at its own discretion
+Until EFI_BOOT_SERVICES.ExitBootServices() is called, the memory map is owned by the firmware and the currently executing UEFI Image should only use memory pages it has explicitly allocated.
+If the MemoryMap buffer is too small, the EFI_BUFFER_TOO_SMALL error code is returned and the MemoryMapSize value contains the size of the buffer needed to contain the current memory map. The actual size of the buffer allocated for the consequent call to GetMemoryMap() should be bigger then the value returned in MemoryMapSize, since allocation of the new buffer may potentially increase memory 
+map size.
+On success a MapKey is returned that identifies the current memory map. The firmware’s key is changed every time something in the memory map changes. In order to successfully invoke 
+EFI_BOOT_SERVICES.ExitBootServices() the caller must provide the current memory map key.
+The GetMemoryMap() function also returns the size and revision number of the 
+EFI_MEMORY_DESCRIPTOR. The DescriptorSize represents the size in bytes of an 
+EFI_MEMORY_DESCRIPTOR array element returned in MemoryMap. The size is returned to allow for future expansion of the EFI_MEMORY_DESCRIPTOR in response to hardware innovation. The structure of the EFI_MEMORY_DESCRIPTOR may be extended in the future but it will remain backwards compatible with the current definition. Thus OS software must use the DescriptorSize to find the start of each　EFI_MEMORY_DESCRIPTOR in the MemoryMap array. 
+
+Status Codes Returned
+EFI_SUCCESS　　　　　The memory map was returned in the MemoryMap buffer.
+EFI_BUFFER_TOO_SMALL　The MemoryMap buffer was too small. The current buffer size needed to 
+EFI_INVALID_PARAMETER　hold the memory map is returned in MemoryMapSize.
+MemoryMapSize is NULL.
+EFI_INVALID_PARAMETER　The MemoryMap buffer is not too small and MemoryMap is NULL 
+
+ Memory Allocation Services
+
+The functions that make up Memory Allocation Services are used during preboot to allocate and free memory, and to obtain the system’s memory map, below, Memory Allocation Functions .
+
+Table 7.4 Memory Allocation Functions
+Name　　　　　　　Type　　　　Description
+AllocatePages　　　Boot　　　　Allocates pages of a particular type.
+FreePages　　　　　Boot　　　　Frees allocated pages.
+GetMemoryMap　　　　Boot　　　 Returns the current boot services memory map and memory map key.
+AllocatePool　　　　Boot　　　　Allocates a pool of a particular type
+FreePool　　　　　　Boot       Frees allocated pool
+ 
+
+The way in which these functions are used is directly related to an important feature of UEFI memory design. This feature, which stipulates that EFI firmware owns the system’s memory map during preboot, has three major consequences:
+
+During preboot, all components (including executing EFI images) must cooperate with the firmware by allocating and freeing memory from the system with the functions EFI_BOOT_SERVICES.AllocatePages() , EFI_BOOT_SERVICES.AllocatePool() , EFI_BOOT_SERVICES.FreePages() , and EFI_BOOT_SERVICES.FreePool() . The firmware dynamically maintains the memory map as these functions are called.
+
+During preboot, an executing EFI Image must only use the memory it has allocated.
+
+Before an executing EFI image exits and returns control to the firmware, it must free all resources it has explicitly allocated. This includes all memory pages, pool allocations, open file handles, etc. Memory allocated by the firmware to load an image is freed by the firmware when the image is unloaded.
+
+This specification describes numerous memory buffers that are allocated by a service, where it is the caller’s responsibility to free the allocated memory. Unless stated otherwise in this specification, it is assumed that such memory buffers are allocated with AllocatePool() and freed with FreePool().
+
+When memory is allocated, it is “typed” according to the values in EFI_MEMORY_TYPE (see the description for EFI_BOOT_SERVICES.AllocatePages() . Some of the types have a different usage before EFI_BOOT_SERVICES.ExitBootServices() is called than they do afterwards. See Table, below, Memory Type Usage before ExitBootServices() lists each type and its usage before the call; See Table Memory Type Usage after ExitBootServices() lists each type and its usage after the call. The system firmware must follow the processor-specific rules outlined in IA-32 Platforms and x64 Platforms in the layout of the EFI memory map to enable the OS to make the required virtual mappings.
+
+
+Mnemonic                 Description
+EfiReservedMemoryType    Not usable.
+EfiLoaderCode            The code portions of a loaded UEFI application.
+EfiLoaderData            The data portions of a loaded UEFI application and the default data allocation type used by a UEFI application to allocate pool memory.
+
+EfiBootServicesCode      The code portions of a loaded UEFI Boot Service Driver.
+EfiBootServicesData      The data portions of a loaded UEFI Boot Serve Driver, and the default data allocation type used by a UEFI Boot Service Driver to allocate pool memory.
+
+EfiRuntimeServicesCode   The code portions of a loaded UEFI Runtime Driver.
+EfiRuntimeServicesData   The data portions of a loaded UEFI Runtime Driver and the default data allocation type used by a UEFI Runtime Driver to allocate pool memory.
+EfiConventionalMemory    Free (unallocated) memory.
+EfiUnusableMemory        Memory in which errors have been detected.
+EfiACPIReclaimMemory     Memory that holds the ACPI tables.
+EfiACPIMemoryNVS         Address space reserved for use by the firmware.
+EfiMemoryMappedIO        Used by system firmware to request that a memory-mapped IO region be mapped by the OS to a virtual address so it can be accessed by EFI runtime services.
+
+EfiMemoryMappedIOPortSpace System memory-mapped IO region that is used to translate memory cycles to IO cycles by the processor.
+
+EfiPalCode               Address space reserved by the firmware for code that is part of the processor.
+
+EfiPersistentMemory      A memory region that operates as EfiConventionalMemory. However, it happens to also support byte-addressable non-volatility.
+
+EfiUnacceptedMemoryType  A memory region that represents unaccepted memory, that must be accepted by the boot target before it can be used. Unless otherwise noted, ll other EFI memory types are accepted. For platforms that support unaccepted memory, all unaccepted valid memory will be reported as unaccepted in the memory map. Unreported physical address ranges must be treated as not-present memory.
+
+
+ Note: There is only one region of type EfiMemoryMappedIoPortSpace defined in the architecture for Itanium-based platforms. As a result, there should be one and only one region of type EfiMemoryMappedIoPortSpace in the EFI memory map of an Itanium-based platform.
+ 
+
+Mnemonic                 Description
+
+EfiReservedMemoryType    Not usable.
+EfiLoaderCode            The UEFI OS Loader and/or OS may use this memory as they see fit. Note: the UEFI OS loader that called EFI_BOOT_SERVICES.ExitBootServices() is utilizing one or more EfiLoaderCode ranges.
+
+EfiLoaderData            The Loader and/or OS may use this memory as they see fit. Note: the OS loader that called ExitBootServices() is utilizing one or more EfiLoaderData ranges.
+
+EfiBootServicesCode       Memory available for general use.
+EfiBootServicesData       Memory available for general use.
+EfiRuntimeServicesCode    The memory in this range is to be preserved by the UEFI OS loader and OS in the working and ACPI S1-S3 states.
+
+EfiRuntimeServicesData    The memory in this range is to be preserved by the UEFI OS l loader and OS in the working and ACPI S1-S3 states.
+
+EfiConventionalMemory     Memory available for general use.
+EfiUnusableMemory         Memory that contains errors and is not to be used.
+EfiACPIReclaimMemory      This memory is to be preserved by the UEFI OS loader and OS until ACPI is enabled. Once ACPI is enabled, the memory in this range is available for general use.
+
+EfiACPIMemoryNVS          This memory is to be preserved by the UEFI OS loader and OS in the working and ACPI S1-S3 states.
+
+EfiMemoryMappedIO         This memory is not used by the OS. All system memory-mapped IO information should come from ACPI tables.
+
+EfiMemoryMappedIOPortSpace This memory is not used by the OS. All system memory-mapped IO port space information should come from ACPI tables.
+
+EfiPalCode                 This memory is to be preserved by the UEFI OS loader and OS in the working and ACPI S1-S4 states. This memory may also have other attributes that are defined by the processor implementation.
+
+EfiPersistentMemory         A memory region that operates as EfiConventionalMemory. However, it happens to also support byte-addressable non-volatility.
+
+EfiUnacceptedMemoryType     A memory region that represents unaccepted memory, that must be accepted by the boot target before it can be used. Unless otherwise noted, all other EFI memory types are accepted. For platforms that support unaccepted memory, all unaccepted valid memory will be reported as unaccepted in the memory map. Unreported physical address ranges must be treated as not-present memory.
+
+NOTE: An image that calls ExitBootServices() (i.e., a UEFI OS Loader) first calls EFI_BOOT_SERVICES.GetMemoryMap() to obtain the current memory map. Following the ExitBootServices() call, the image implicitly owns all unused memory in the map. This includes memory types EfiLoaderCode, EfiLoaderData, EfiBootServicesCode, EfiBootServicesData, and EfiConventionalMemory. A UEFI OS Loader and OS must preserve the memory marked as EfiRuntimeServicesCode and EfiRuntimeServicesData.
