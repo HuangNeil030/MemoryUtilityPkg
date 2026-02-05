@@ -1,290 +1,322 @@
 # MemoryUtilityPkg
-1. 這個工具能做什麼
+UEFI 函數使用筆記 (README)
+本文件歸納了 Simple Text Input Protocol、Simple Text Output Protocol 以及 Boot Services 中關於事件與記憶體管理的關鍵函數。
 
-本工具提供兩大功能頁：
+1. 文字輸入 (Simple Text Input Protocol)
+ReadKeyStroke()
+讀取輸入設備的下一個按鍵輸入 。
 
-Dump Memory Map
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_INPUT_READ_KEY) (
+   IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL *This,
+   OUT EFI_INPUT_KEY *Key
+);
+參數:
 
-讀取 UEFI Boot Services 的 Memory Map
 
-逐段列出：Memory Type / 起始位址 / 結束位址 / Pages
+This: 指向 Protocol 實例的指標 。
 
-統計每種 type 的 pages，並估算總記憶體大小（MB）
 
-Allocate Memory
+Key: 指向 EFI_INPUT_KEY 結構的指標，用於存放按鍵資訊 。
 
-Allocate Pages：使用 AllocatePages() 分配頁（Page = 4KB）
+說明:
 
-Allocate Pools：使用 AllocatePool() 分配位元組（Byte）
+若無按鍵輸入，函數會返回 EFI_NOT_READY 。
 
-分配完成可進入 Hex Editor 檢視/修改記憶體內容
+若有按鍵：
 
-最後可選擇釋放：FreePages() / FreePool()
-2. 操作方式總覽（按鍵與輸入規則）
-2.1 Menu 選單頁（主選單/子選單/MemoryType 選單）
 
-↑ / ↓：移動選取
+ScanCode: 對應 EFI 掃描碼 (如功能鍵) 。
 
-Enter：確認
 
-ESC：返回上一層 / 取消
+UnicodeChar: 可列印字元；若按鍵無對應字元則為 0 。
 
-2.2 數字輸入規則（PromptU64）
+回傳值:
 
-支援兩種格式：
 
-十進位：4096
+EFI_SUCCESS: 成功讀取按鍵 。
 
-十六進位：0x100000
 
-輸入時支援：
+EFI_NOT_READY: 目前無按鍵資料 。
 
-Backspace：刪字
 
-Enter：送出
+EFI_DEVICE_ERROR: 硬體錯誤 。
 
-ESC：取消（回傳 EFI_ABORTED）
+2. 事件服務 (Boot Services - Events)
+WaitForEvent()
+暫停執行，直到指定的事件被觸發 。
 
-2.3 Hex Editor（16x16 顯示）
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_WAIT_FOR_EVENT) (
+   IN UINTN NumberOfEvents,
+   IN EFI_EVENT *Event,
+   OUT UINTN *Index
+);
+參數:
 
-← / → / ↑ / ↓：移動游標（每格 1 byte）
 
-PgUp / PgDn：翻頁（每頁 256 bytes）
+NumberOfEvents: 事件陣列中的事件數量 。
 
-Enter：修改游標所在 byte（輸入 hex byte）
 
-ESC：離開 Hex Editor
-3. 功能 1：Dump Memory Map
-3.1 使用流程
+Event: EFI_EVENT 陣列 。
 
-主選單選 Dump Memory Map
 
-工具會呼叫 gBS->GetMemoryMap() 取得 memory descriptors
+Index: 指向滿足等待條件之事件索引值的指標 。
 
-顯示列表（每 20 行暫停一次）
+說明:
 
-最後顯示各 type pages 統計 + Total Memory (MB)
+必須在 TPL_APPLICATION 優先級下呼叫，否則返回 EFI_UNSUPPORTED 。
 
-任意鍵返回主選單
+依序評估陣列中的事件，直到有事件被觸發或發生錯誤 。
 
-3.2 背後的關鍵 API：GetMemoryMap（兩段式）
+若事件處於 Signaled 狀態，會清除該狀態並返回成功 。
 
-第一次呼叫：MapSize=0, Map=NULL
+若要等待特定時間，需在陣列中包含 Timer 事件 。
 
-預期回傳：EFI_BUFFER_TOO_SMALL
+回傳值:
 
-這次會把「需要的 MapSize」寫回給你
 
-AllocatePool：用取得的 MapSize 去分配 buffer
+EFI_SUCCESS: 指定索引的事件已被觸發 。
 
-第二次呼叫：真正拿到 Memory Map
 
-3.3 常見錯誤碼與原因
+EFI_INVALID_PARAMETER: NumberOfEvents 為 0，或事件類型錯誤 。
 
-EFI_BUFFER_TOO_SMALL
 
-第一次呼叫預期會發生（這是正常流程）
+EFI_UNSUPPORTED: 當前 TPL 不是 TPL_APPLICATION 。
 
-EFI_OUT_OF_RESOURCES
+3. 文字輸出 (Simple Text Output Protocol)
+SetMode()
+設定輸出設備的模式 。
 
-AllocatePool 失敗，記憶體不足或環境限制
+原型 (Prototype):
+typedef EFI_STATUS (* EFIAPI EFI_TEXT_SET_MODE) (
+   IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This,
+   IN UINTN ModeNumber
+);
+參數:
 
-EFI_INVALID_PARAMETER
 
-參數不合法（通常是你傳錯指標或 MapSize）
+ModeNumber: 欲設定的文字模式編號 。
 
-3.4 你可以怎麼擴充
+說明:
 
-顯示 D->Attribute（例如 UC/WC/WB/XP…）
+成功後，設備將切換至請求的幾何配置，並清除螢幕至當前背景色，游標歸零至 (0,0) 。
 
-顯示 VirtualStart（在切換虛擬位址後才重要）
+回傳值:
 
-支援搜尋/過濾 MemoryType（只看 Conventional / ACPI…）
 
-4. 功能 2：Allocate Pages
-4.1 使用流程（UI）
+EFI_SUCCESS: 模式設定成功 。
 
-主選單：Allocate Memory
 
-子選單：選 Allocate Pages
+EFI_DEVICE_ERROR: 設備錯誤 。
 
-選 Memory Type（例如 EfiBootServicesData）
 
-選 Allocate Type
+EFI_UNSUPPORTED: 模式編號無效 。
 
-AllocateAnyPages
+ClearScreen()
+清除螢幕顯示 。
 
-AllocateMaxAddress（需要輸入上限地址）
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_TEXT_CLEAR_SCREEN) (
+   IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This
+);
+說明:
 
-AllocateAddress（需要輸入固定地址）
+使用當前背景色清除畫面 。
 
-輸入 pages 數量
+游標位置重置為 (0, 0) 。
 
-顯示成功後的範圍：Start ~ End
+回傳值:
 
-問你要不要進 Hex Editor（y/n）
 
-問你要不要 FreePages（y/n）
+EFI_SUCCESS: 操作成功 。
 
-4.2 背後 API
+SetCursorPosition()
+設定游標座標 。
 
-gBS->AllocatePages(AllocateType, MemoryType, Pages, &Addr)
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_TEXT_SET_CURSOR_POSITION) (
+   IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This,
+   IN UINTN Column,
+   IN UINTN Row
+);
+參數:
 
-gBS->FreePages(Addr, Pages)
 
-4.3 Pages、Bytes、地址範圍怎麼算
+Column, Row: 目標座標。必須在 QueryMode() 回傳的範圍內 。
 
-1 page = 4096 bytes
+說明:
 
-TotalBytes = EFI_PAGES_TO_SIZE(Pages)
+螢幕左上角定義為 (0, 0) 。
 
-End = Start + TotalBytes - 1
+回傳值:
 
-4.4 常見錯誤碼與原因
 
-EFI_OUT_OF_RESOURCES
+EFI_SUCCESS: 成功 。
 
-沒有足夠的連續頁面可分配
 
-EFI_INVALID_PARAMETER
+EFI_UNSUPPORTED: 游標位置無效 。
 
-AllocateType/MemoryType 不合法
+EnableCursor()
+設定游標可見性 。
 
-AllocateAddress 但地址不是 page-aligned（通常必須 4KB 對齊）
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_TEXT_ENABLE_CURSOR) (
+   IN EFI_SIMPLE_TEXT_OUTPUT_PROTOCOL *This,
+   IN BOOLEAN Visible
+);
+參數:
 
-EFI_NOT_FOUND（較少）
 
-某些平台在 MaxAddress 模式找不到可用區間
+Visible: TRUE 為顯示，FALSE 為隱藏 。
 
-4.5 你可以怎麼擴充
+4. 記憶體管理 (Boot Services - Memory)
+AllocatePages()
+配置記憶體頁面 (Pages)
+typedef EFI_STATUS (EFIAPI *EFI_ALLOCATE_PAGES) (
+   IN EFI_ALLOCATE_TYPE Type,
+   IN EFI_MEMORY_TYPE MemoryType,
+   IN UINTN Pages,
+   IN OUT EFI_PHYSICAL_ADDRESS *Memory
+);
+參數:
 
-讓使用者輸入「bytes」，你幫他換算 pages（bytes→pages 向上取整）
 
-AllocatePages 後自動 SetMem() 清零或填固定 pattern
+Type: 配置類型 (如 AllocateAnyPages, AllocateAddress) 。
 
-增加「顯示當前游標的全域地址」：Addr + BaseOffset + Cursor
 
-5. 功能 3：Allocate Pools（你要求的限制版）
-5.1 你這版的核心規則（非常重要）
+AllocateAnyPages: 配置任何滿足條件的頁面，忽略輸入的 Memory 地址 。
 
-使用者輸入：Bytes（想要的大小，也是可寫範圍）
 
-實際分配：AllocSize = max(Bytes, 256)
+AllocateMaxAddress: 配置地址小於或等於輸入 Memory 的頁面 。
 
-目的：畫面永遠能顯示 16x16 = 256 bytes
 
-Hex Editor：
+AllocateAddress: 配置在指定地址的頁面 。
 
-顯示範圍：看 AllocSize
 
-可修改範圍：只允許 0 .. Bytes-1
+MemoryType: 記憶體類型 (如 EfiLoaderData) 。UEFI App 通常使用 EfiLoaderData 。
 
-超出範圍按 Enter 會提示：Out of allocated range
 
-5.2 使用流程（UI）
+Pages: 連續 4 KiB 頁面的數量 。
 
-Allocate Memory → Allocate Pools
 
-選 Memory Type
+Memory: 輸入時依 Type 決定用途；輸出時為配置到的起始物理地址 。
 
-輸入 Bytes（你真正需要的大小）
+回傳值:
 
-顯示：
 
-Requested: Bytes
+EFI_SUCCESS: 成功 。
 
-Allocated: AllocSize (>=256)
 
-Address Range（印 requested 範圍）
+EFI_OUT_OF_RESOURCES: 無法配置 。
 
-進 Hex Editor（可選）
 
-FreePool（可選）
+EFI_NOT_FOUND: 找不到符合請求的頁面 。
 
-5.3 背後 API
+FreePages()
+釋放記憶體頁面 。
 
-gBS->AllocatePool(MemoryType, AllocSize, &Buf)
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_FREE_PAGES) (
+   IN EFI_PHYSICAL_ADDRESS Memory,
+   IN UINTN Pages
+);
+參數:
 
-gBS->FreePool(Buf)
 
-5.4 常見錯誤碼與原因
+Memory: 欲釋放頁面的起始物理地址 。
 
-EFI_OUT_OF_RESOURCES
 
-pool 分配失敗（資源不足）
+Pages: 欲釋放的連續 4 KiB 頁面數量 。
 
-EFI_INVALID_PARAMETER
+回傳值:
 
-MemoryType 不合法，或指標/大小不對
 
-EFI_ACCESS_DENIED（少見）
+EFI_SUCCESS: 成功釋放 。
 
-某些安全策略或階段限制（依平台）
 
-5.5 為什麼「顯示 256 但只能改 Bytes」是合理的
+EFI_NOT_FOUND: 該記憶體未經 AllocatePages 配置 。
 
-UI 想固定 16x16，不然 Bytes < 256 時畫面會不滿格
+GetMemoryMap()
+取得當前記憶體地圖 (Memory Map) 。
 
-但你希望「使用者輸入多大就只能改多大」，避免誤改到你額外分配出來的 padding 區
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_GET_MEMORY_MAP) (
+   IN OUT UINTN *MemoryMapSize,
+   OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
+   OUT UINTN *MapKey,
+   OUT UINTN *DescriptorSize,
+   OUT UINT32 *DescriptorVersion
+);
+說明:
 
-6. Hex Editor 的內部邏輯（你之後會常用）
-6.1 指標與索引關係
+回傳系統中所有記憶體的描述符陣列，包含已配置與韌體使用的區域 。
 
-Buf：分配到的起始指標
+OS 軟體需使用 DescriptorSize 來尋找陣列中下一個描述符的位置，以確保相容性 。
 
-BaseOffset：翻頁偏移（0, 256, 512…）
 
-Cursor：頁內游標（0..255）
+Buffer Too Small 處理: 若緩衝區太小，返回 EFI_BUFFER_TOO_SMALL，並在 MemoryMapSize 中提供所需大小 。再次呼叫時，建議配置比回傳值更大的緩衝區，因為配置動作本身可能會增加 Map 的大小 。
 
-全域索引：GlobalIdx = BaseOffset + Cursor
 
-實際要寫的位置：Buf[GlobalIdx]
+MapKey: 用於識別當前 Map 版本，ExitBootServices 時必須提供此 Key 。
 
-6.2 「限制可寫範圍」的判斷（核心）
+AllocatePool()
+配置記憶體池 (Pool) 。
 
-if (GlobalIdx >= EditSize) { 禁止修改 }
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_ALLOCATE_POOL) (
+   IN EFI_MEMORY_TYPE PoolType,
+   IN UINTN Size,
+   OUT VOID **Buffer
+);
+參數:
 
-Pages 模式：EditSize = TotalBytes
 
-Pools 模式：EditSize = Bytes（你輸入值）
+PoolType: 記憶體池類型 。
 
-6.3 常見擴充（建議你下一步加）
 
-顯示 ASCII 欄（右側 16 字元）
+Size: 欲配置的位元組 (Bytes) 數量 。
 
-顯示游標位址：Current = (UINTN)Buf + GlobalIdx
 
-支援一次輸入 16 bytes（貼 hex string）
+Buffer: 指向配置緩衝區指標的指標 。
 
-增加「搜尋 pattern」功能
+說明:
 
-7. 你這份工具的「開發/除錯重點筆記」
-7.1 任何 Boot Services API 都看 EFI_STATUS
+所有配置皆為 8-byte 對齊 。
 
-用 %r 印出錯誤最省時間
-Print(L"xxx: %r\n", Status);
+回傳值:
 
-7.2 指標轉整數顯示
 
-位址顯示常用：
+EFI_SUCCESS: 成功 。
 
-%p（印指標）
 
-%lx（印 UINT64 位址）
+EFI_OUT_OF_RESOURCES: 無法配置 。
 
-轉型要小心：
+FreePool()
+釋放記憶體池 。
 
-(UINTN)Ptr → 平台指標寬度
+原型 (Prototype):
+typedef EFI_STATUS (EFIAPI *EFI_FREE_POOL) (
+   IN VOID *Buffer
+);
+參數:
 
-(UINT64)(UINTN)Ptr → 轉成 64-bit 印
 
-7.3 Pool vs Pages 的差異
+Buffer: 指向欲釋放緩衝區的指標 。
 
-Pages：以 頁為單位，會回傳 EFI_PHYSICAL_ADDRESS
+說明:
 
-Pool：以 byte為單位，回傳 VOID*（虛擬/實體概念由實作決定，但在 Boot 時通常 identity mapping）
+釋放後，該記憶體類型將變回 EfiConventionalMemory 。
 
+回傳值:
 
+
+EFI_SUCCESS: 成功釋放 。
+
+
+EFI_INVALID_PARAMETER: Buffer 無效 。
+
+__________________________________________________________
 cd /d D:\BIOS\MyWorkSpace\edk2
 
 edksetup.bat Rebuild
