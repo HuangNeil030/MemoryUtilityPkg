@@ -241,19 +241,7 @@
 
 ---
 
-## 8. 建議你加到 README 最下面的一段（用來背）
 
-### 常用 UEFI Memory API 口訣
-
-* 「拿 memory map → 兩段式 GetMemoryMap（先問大小再 allocate）」
-* 「要連續頁 → AllocatePages / FreePages」
-* 「要任意 buffer → AllocatePool / FreePool」
-* 「Hex editor 寫入 → 用 GlobalIdx 防越界」
-
----
-
-如果你願意，我也可以再幫你補一個 README 章節：
-**「.inf / .dsc / .dec 要怎麼寫才能把這支 MemoryApp 編進 EDK2」**（包含 LibraryClasses、Build target、路徑範例、常見編譯錯誤對策）。
 
 __________________________________________________________
 cd /d D:\BIOS\MyWorkSpace\edk2
