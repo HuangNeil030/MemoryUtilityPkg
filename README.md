@@ -234,7 +234,7 @@
   * `(UINTN)Ptr` → 平台指標寬度
   * `(UINT64)(UINTN)Ptr` → 轉成 64-bit 印
 
-### 7.3 Pool vs Pages 的差異（面試也會問）
+### 7.3 Pool vs Pages 的差異
 
 * Pages：以 **頁**為單位，會回傳 `EFI_PHYSICAL_ADDRESS`
 * Pool：以 **byte**為單位，回傳 `VOID*`（虛擬/實體概念由實作決定，但在 Boot 時通常 identity mapping）
